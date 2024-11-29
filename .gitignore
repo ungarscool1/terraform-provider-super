@@ -1,2 +1,3 @@
 terraform-provider-super-terraform-provider
 example/.terraform
+example/*.tfstate

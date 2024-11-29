@@ -9,7 +9,9 @@ terraform {
 
 provider "super" {}
 
-data "super_api_gateway_api_keys" "example" {}
+data "super_api_gateway_api_keys" "example" {
+  include_values = true
+}
 
 output "api_keys" {
   value = data.super_api_gateway_api_keys.example

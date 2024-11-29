@@ -56,6 +56,11 @@ func dataSourceAPIGatewayAPIKeys() *schema.Resource {
 					},
 				},
 			},
+			"include_values": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
