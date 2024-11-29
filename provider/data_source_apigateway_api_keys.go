@@ -14,10 +14,47 @@ func dataSourceAPIGatewayAPIKeys() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAPIGatewayAPIKeysRead,
 		Schema: map[string]*schema.Schema{
-			"ids": {
+			"items": {
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"created_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"last_updated_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"stage_keys": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -35,9 +72,15 @@ func dataSourceAPIGatewayAPIKeysRead(d *schema.ResourceData, meta interface{}) e
 	// Create API Gateway client
 	client := apigateway.NewFromConfig(cfg)
 
-	// Fetch API Keys
-	var apiKeys []string
-	paginator := apigateway.NewGetApiKeysPaginator(client, &apigateway.GetApiKeysInput{})
+	var apiKeys []map[string]interface{}
+	includeValues := false
+	if v, ok := d.GetOk("include_values"); ok {
+		includeValues = v.(bool)
+	}
+
+	paginator := apigateway.NewGetApiKeysPaginator(client, &apigateway.GetApiKeysInput{
+		IncludeValues: &includeValues,
+	})
 
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
@@ -45,20 +88,27 @@ func dataSourceAPIGatewayAPIKeysRead(d *schema.ResourceData, meta interface{}) e
 			return err
 		}
 
-		for _, key := range output.Items {
-			apiKeys = append(apiKeys, aws.ToString(key.Id))
+		for _, item := range output.Items {
+			apiKey := map[string]interface{}{
+				"id":                *item.Id,
+				"name":              *item.Name,
+				"enabled":           item.Enabled,
+				"created_date":      item.CreatedDate.String(),
+				"last_updated_date": item.LastUpdatedDate.String(),
+				"stage_keys":        item.StageKeys,
+				"tags":              item.Tags,
+				"value":             aws.ToString(item.Value),
+			}
+			apiKeys = append(apiKeys, apiKey)
 		}
 	}
 
-	// Set data source attributes
-	if err := d.Set("ids", apiKeys); err != nil {
+	if err := d.Set("items", apiKeys); err != nil {
 		return err
 	}
-
 	// Set the data source ID to ensure Terraform sees it as stable
-	d.SetId("aws_api_gateway_api_keys")
+	d.SetId("super_api_gateway_api_keys")
 
 	log.Printf("[INFO] Retrieved %d API Gateway API Keys", len(apiKeys))
 	return nil
 }
-

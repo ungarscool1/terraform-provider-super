@@ -8,7 +8,7 @@ func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{},
 		DataSourcesMap: map[string]*schema.Resource{
-			"aws_api_gateway_api_keys": dataSourceAPIGatewayAPIKeys(),
+			"super_api_gateway_api_keys": dataSourceAPIGatewayAPIKeys(),
 		},
 	}
 }
